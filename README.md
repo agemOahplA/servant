@@ -24,9 +24,13 @@ samples, guidance on mobile development, and a full API reference.
 
 启动监听并让它留在后台运行是安全的。
 
-
+* 项目初始化
+```
+flutter create .
+```
 # 不安全的库
 ```
 flutter run --no-sound-null-safety
 ```
+
 
