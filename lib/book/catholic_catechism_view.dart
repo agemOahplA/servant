@@ -69,7 +69,6 @@ class _CatholicCatechismViewState extends State<CatholicCatechismView> {
   }
   // 读取json文件
   void getCatholicCatechismJSON() async {
-    print('11111');
     String jsonString = await rootBundle.loadString("assets/catholicCatechism.json");
     final jsonResult = json.decode(jsonString);
     Node node = Node.fromJson(jsonResult);
@@ -96,9 +95,6 @@ class _CatholicCatechismViewState extends State<CatholicCatechismView> {
 
   }
 
-  void fun(){
-
-  }
 }
 
 class Entry {
@@ -113,7 +109,6 @@ class Entry {
 
 
 const scrollDuration = Duration(seconds: 2);
-
 
 class ScrollablePositionedListPage extends StatefulWidget {
   const ScrollablePositionedListPage({Key? key, required this.title, required this.id,required this.dataMap,required this.dataList}) : super(key: key);
@@ -177,8 +172,16 @@ class _ScrollablePositionedListPageState
         appBar: AppBar(
           title: Text(appBarTitle),
           centerTitle: true,
+          actions: <Widget>[
+            IconButton(
+              icon: Icon(Icons.search),
+              onPressed: () async{
+                String id = await showSearch(context: context, delegate: CustomSearchDelegate(dataList: widget.dataList));
+                jumpTo(widget.dataMap[id]!.index??0);
+              },
+            )
+          ],
           leading: IconButton(icon: const Icon(Icons.arrow_back),onPressed: (){
-            print('点击返回');
             Navigator.of(context).pop(chapterId);
           }),
         ),
@@ -188,34 +191,12 @@ class _ScrollablePositionedListPageState
               Expanded(
                 child: list(orientation),
               ),
-              // positionsView,
-              // Row(
-              //   children: <Widget>[
-              //     Column(
-              //       children: <Widget>[
-              //         scrollControlButtons,
-              //         const SizedBox(height: 10),
-              //         jumpControlButtons,
-              //         alignmentControl,
-              //       ],
-              //     ),
-              //   ],
-              // )
             ],
           ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _incrementCounter,
-          tooltip: 'Increment',
-          child: const Icon(Icons.search_sharp),
         )
     );
   }
 
-
-  void _incrementCounter(){
-    print('查找');
-  }
 
   Widget get alignmentControl => Row(
     mainAxisSize: MainAxisSize.max,
@@ -289,9 +270,11 @@ class _ScrollablePositionedListPageState
       ),
     );
   }
-
+  // 内容设置
   Widget customContent(Node node){
+    // 字体大小
     double textScaleFactor= 1;
+    // 距离 边界距离
     double all = 5.0;
     if(node.type == 'text'){
 
@@ -323,4 +306,99 @@ class _ScrollablePositionedListPageState
         child: Text(node.name,key:Key(node.id),textScaleFactor: textScaleFactor,textAlign: TextAlign.center));
 
   }
+}
+
+/// 搜索页面
+class CustomSearchDelegate extends SearchDelegate{
+
+  late final List<Node> dataList;
+
+  CustomSearchDelegate({required this.dataList});
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(
+        tooltip: 'Clear',
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+          showSuggestions(context);
+        },
+      )
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      icon: AnimatedIcon(
+          icon: AnimatedIcons.menu_arrow, progress: transitionAnimation),
+      onPressed: () {
+        if (query.isEmpty) {
+          close(context, null);
+        } else {
+          query = "";
+          showSuggestions(context);
+        }
+      },
+    );
+  }
+  // 搜索返回匹配内容
+  @override
+  Widget buildResults(BuildContext context) {
+    List<Widget> dataFilter = [];
+    dataList.forEach((element) {
+      // 匹配
+      if(element.name.contains(query)){
+        // 切割
+        var split = element.name.split(query);
+        // 匹配内容 关键字加样式
+        dataFilter.add(ListTile(key: Key(element.id),title: Text.rich(TextSpan(
+            children: [
+              TextSpan(
+                  text: split[0]
+              ),
+              TextSpan(
+                text: query,
+                style: TextStyle(
+                    color: Colors.blue
+                ),
+              ),
+              TextSpan(
+                text: split[1],
+              )
+            ]
+        )),
+        onTap: (){
+          // 点击选择的内容 回传参数
+          close(context, element.id);
+        },
+        ));
+      }
+    });
+
+    if(dataFilter.isNotEmpty){
+      return ListView(
+        children: dataFilter,
+      );
+    }else{
+      return Center(child: Text('没有匹配内容'),);
+    }
+
+  }
+  // 数据显示
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    // return ListView(
+    //   children: <Widget>[
+    //     for(var node in dataList)
+    //       ListTile(title: Text(node.name))
+    //   ],
+    // );
+
+    return Center(child: Text('全文搜索'),);
+  }
+
+
 }
